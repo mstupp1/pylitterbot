@@ -7,9 +7,13 @@ fetch_weight_history). Nothing in this module sends commands to the robot.
 from __future__ import annotations
 
 import asyncio
+import ssl
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta, timezone
 from typing import Any
+
+import certifi
+from aiohttp import ClientSession, TCPConnector
 
 from pylitterbot import Account
 from pylitterbot.exceptions import LitterRobotException
@@ -111,7 +115,12 @@ async def _fetch_activities(
 async def _fetch(
     username: str, password: str, days: int, max_records: int
 ) -> DashboardSnapshot:
-    account = Account()
+    # Use certifi's CA bundle: python.org builds of Python on macOS don't use
+    # the system keychain, so the default context fails to verify Whisker's
+    # certificates (CERTIFICATE_VERIFY_FAILED).
+    ssl_context = ssl.create_default_context(cafile=certifi.where())
+    websession = ClientSession(connector=TCPConnector(ssl=ssl_context))
+    account = Account(websession=websession)
     try:
         await account.connect(
             username=username,
@@ -169,6 +178,7 @@ async def _fetch(
         )
     finally:
         await account.disconnect()
+        await websession.close()
 
 
 def load_snapshot(

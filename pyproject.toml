@@ -29,6 +29,8 @@ dashboard = [
     "plotly>=5.20",
     "pandas>=2.0",
     "python-dotenv>=1.0",
+    "certifi",
+    "watchdog",
 ]
 
 [project.scripts]
